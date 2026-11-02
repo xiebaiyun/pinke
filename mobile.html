@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>台州拼客网</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#ff6b35;--primary-dark:#e55a2b;--primary-light:#fff0eb;
+  --secondary:#2563eb;--accent:#10b981;--danger:#ef4444;
+  --text:#1e293b;--text-s:#64748b;--text-l:#94a3b8;
+  --bg:#f5f5f7;--white:#fff;--border:#e8e8ed;
+  --safe-top:env(safe-area-inset-top,20px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --tab-h:56px;
+  --header-h:48px;
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+button{border:none;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+input,textarea,select{font-family:inherit;border:1px solid var(--border);border-radius:10px;padding:12px 14px;outline:none;width:100%;font-size:.95rem;-webkit-appearance:none;background:var(--white)}
+input:focus,textarea:focus{border-color:var(--primary)}
+
+/* === Tab Bar === */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:calc(var(--tab-h) + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.65rem;color:var(--text-l);transition:color .2s;-webkit-tap-highlight-color:transparent}
+.tab-item.active{color:var(--primary)}
+.tab-item .tab-icon{font-size:1.35rem;line-height:1}
+.tab-item .tab-badge{position:absolute;top:4px;right:calc(50% - 18px);min-width:16px;height:16px;padding:0 4px;background:var(--danger);color:var(--white);font-size:.6rem;font-weight:700;border-radius:8px;display:flex;align-items:center;justify-content:center}
+
+/* === Page Container === */
+.app{height:100%;display:flex;flex-direction:column}
+.page-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--tab-h) + var(--safe-bottom) + 12px)}
+
+/* === Header === */
+.m-header{padding:var(--safe-top) 16px 0;background:var(--white);position:sticky;top:0;z-index:50}
+.m-header .search-row{display:flex;gap:8px;padding:8px 0 12px}
+.m-header .search-input{flex:1;position:relative}
+.m-header .search-input input{padding:10px 14px 10px 36px;border-radius:24px;background:var(--bg);border:1px solid transparent;font-size:.88rem}
+.m-header .search-input .s-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-l);font-size:.9rem}
+.m-header .city-btn{padding:8px 12px;background:var(--bg);border-radius:24px;font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap}
+
+/* === Sections === */
+.m-section{padding:16px}
+.m-section-title{font-size:1.05rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.m-section-title .more{font-size:.78rem;color:var(--text-l);font-weight:400}
+
+/* === Banner === */
+.m-banner{margin:0 16px 16px;border-radius:14px;overflow:hidden;position:relative;height:150px;background:linear-gradient(135deg,var(--primary),#ff8f6b)}
+.m-banner-content{padding:20px;color:var(--white);position:relative;z-index:1}
+.m-banner-content h2{font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.m-banner-content p{font-size:.82rem;opacity:.9}
+.m-banner-stats{display:flex;gap:16px;margin-top:12px}
+.m-banner-stats .s-item{text-align:center}
+.m-banner-stats .s-num{font-size:1.2rem;font-weight:800}
+.m-banner-stats .s-label{font-size:.65rem;opacity:.8}
+
+/* === Quick Actions === */
+.quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 16px 16px}
+.quick-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px;background:var(--white);border-radius:12px;-webkit-tap-highlight-color:transparent}
+.quick-item .q-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.quick-item .q-name{font-size:.72rem;font-weight:600;color:var(--text)}
+
+/* === Card List === */
+.m-card{background:var(--white);border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.m-card-img{height:160px;position:relative;overflow:hidden;background:linear-gradient(135deg,#f0f0f5,#e8e8ed)}
+.m-card-img img{width:100%;height:100%;object-fit:cover}
+.m-card-img .m-badge{position:absolute;top:10px;left:10px;padding:3px 10px;border-radius:10px;font-size:.68rem;font-weight:600;color:var(--white)}
+.m-card-img .m-badge.hot{background:linear-gradient(135deg,#ff416c,#ff4b2b)}
+.m-card-img .m-badge.new{background:linear-gradient(135deg,#11998e,#38ef7d)}
+.m-card-img .m-badge.full{background:rgba(0,0,0,.4)}
+.m-card-img .m-price-tag{position:absolute;bottom:10px;right:10px;padding:4px 12px;border-radius:10px;background:rgba(0,0,0,.6);color:var(--white);font-size:.82rem;font-weight:700;backdrop-filter:blur(4px)}
+.m-card-body{padding:12px 14px}
+.m-card-title{font-size:.92rem;font-weight:700;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}
+.m-card-info{display:flex;align-items:center;gap:12px;font-size:.75rem;color:var(--text-s);margin-bottom:8px}
+.m-card-bottom{display:flex;align-items:center;justify-content:space-between}
+.m-card-progress{flex:1;margin-right:12px}
+.m-card-progress .bar-bg{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:3px}
+.m-card-progress .bar-fill{height:100%;border-radius:2px;background:var(--primary);transition:width .4s}
+.m-card-progress .bar-text{font-size:.68rem;color:var(--text-l)}
+.m-card-btn{padding:7px 16px;border-radius:20px;background:var(--primary);color:var(--white);font-size:.78rem;font-weight:600;white-space:nowrap}
+.m-card-btn.disabled{background:var(--border);color:var(--text-l)}
+
+/* === Detail Sheet === */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+.sheet{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;animation:sheetUp .3s ease;padding-bottom:var(--safe-bottom)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto}
+.sheet-img{height:220px;position:relative;overflow:hidden}
+.sheet-img img{width:100%;height:100%;object-fit:cover}
+.sheet-img .close-btn{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.4);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.sheet-body{padding:16px 20px 24px}
+.sheet-body h2{font-size:1.15rem;font-weight:700;margin-bottom:10px;line-height:1.4}
+.sheet-info-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.sheet-info-item{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--text-s)}
+.sheet-info-item .dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.sheet-desc{padding:14px;background:var(--bg);border-radius:12px;font-size:.85rem;line-height:1.7;color:var(--text-s);margin-bottom:16px}
+.sheet-organizer{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-radius:12px;margin-bottom:16px}
+.sheet-organizer .avatar{width:36px;height:36px;border-radius:50%;background:var(--primary);color:var(--white);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+.sheet-bottom-bar{position:sticky;bottom:0;background:var(--white);padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+.sheet-bottom-bar .btn-join{flex:1;padding:14px;border-radius:12px;background:var(--primary);color:var(--white);font-size:1rem;font-weight:700;text-align:center}
+.sheet-bottom-bar .btn-join.full{background:var(--border);color:var(--text-l)}
+.sheet-bottom-bar .btn-fav{width:50px;height:50px;border-radius:12px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--white)}
+
+/* === Merchant Card === */
+.m-mer-card{display:flex;gap:12px;background:var(--white);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.m-mer-card .mer-img{width:90px;height:90px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg)}
+.m-mer-card .mer-img img{width:100%;height:100%;object-fit:cover}
+.m-mer-card .mer-info{flex:1;display:flex;flex-direction:column;justify-content:center}
+.m-mer-card .mer-name{font-size:.9rem;font-weight:700;margin-bottom:3px}
+.m-mer-card .mer-rating{font-size:.75rem;color:#f59e0b;margin-bottom:3px}
+.m-mer-card .mer-addr{font-size:.72rem;color:var(--text-s);margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.m-mer-card .mer-discount{display:inline-block;padding:2px 8px;background:var(--primary-light);color:var(--primary);border-radius:8px;font-size:.68rem;font-weight:600}
+
+/* === My Page === */
+.my-header{padding:32px 20px 24px;background:linear-gradient(135deg,var(--primary),#ff8f6b);color:var(--white);text-align:center}
+.my-avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.25);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;border:3px solid rgba(255,255,255,.4)}
+.my-name{font-size:1.1rem;font-weight:700;margin-bottom:2px}
+.my-email{font-size:.78rem;opacity:.8}
+.my-stats{display:flex;background:var(--white);margin:-20px 16px 16px;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.my-stat{flex:1;text-align:center}
+.my-stat .num{font-size:1.3rem;font-weight:800;color:var(--primary)}
+.my-stat .label{font-size:.72rem;color:var(--text-s);margin-top:2px}
+.my-menu{margin:0 16px}
+.my-menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--white);border-bottom:1px solid var(--border);font-size:.9rem}
+.my-menu-item:first-child{border-radius:14px 14px 0 0}
+.my-menu-item:last-child{border-radius:0 0 14px 14px;border-bottom:none}
+.my-menu-item .mi-icon{font-size:1.1rem}
+.my-menu-item .mi-arrow{margin-left:auto;color:var(--text-l);font-size:.8rem}
+
+/* === Login Sheet === */
+.login-form{padding:24px 20px 32px}
+.login-form h2{font-size:1.2rem;font-weight:700;margin-bottom:4px}
+.login-form p{font-size:.82rem;color:var(--text-s);margin-bottom:20px}
+.login-form .form-group{margin-bottom:14px}
+.login-form .form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:var(--text-s)}
+.login-form .btn-login{width:100%;padding:14px;border-radius:12px;background:var(--primary);color:var(--white);font-size:1rem;font-weight:700;margin-top:8px}
+
+/* === Toast === */
+.m-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:12px 24px;border-radius:12px;background:rgba(0,0,0,.75);color:var(--white);font-size:.88rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:280px}
+.m-toast.show{opacity:1}
+
+/* === Publish Form === */
+.publish-sheet{padding:20px}
+.publish-sheet h2{font-size:1.1rem;font-weight:700;margin-bottom:16px}
+
+/* === Empty === */
+.m-empty{text-align:center;padding:60px 20px;color:var(--text-l)}
+.m-empty .icon{font-size:3rem;margin-bottom:8px}
+
+/* Filter chips */
+.chip-row{display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{padding:6px 14px;border-radius:20px;background:var(--white);color:var(--text-s);font-size:.78rem;font-weight:500;white-space:nowrap;border:1px solid var(--border);flex-shrink:0}
+.chip.active{background:var(--primary);color:var(--white);border-color:var(--primary)}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.anim-fade{animation:fadeIn .3s ease}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- === TAB PAGES === -->
+<div class="page-scroll" id="pageScroll">
+
+<!-- HOME TAB -->
+<div id="tab-home">
+  <div class="m-header">
+    <div class="search-row">
+      <div class="search-input">
+        <span class="s-icon">🔍</span>
+        <input type="text" id="mSearchInput" placeholder="搜索拼客活动、商家..." onkeydown="if(event.key==='Enter')doSearch()">
+      </div>
+      <div class="city-btn">📍 台州</div>
+    </div>
+  </div>
+
+  <div class="m-banner" id="mBanner">
+    <div class="m-banner-content">
+      <h2>台州拼客网</h2>
+      <p>拼出精彩 · 客享生活</p>
+      <div class="m-banner-stats" id="mBannerStats"></div>
+    </div>
+  </div>
+
+  <div class="quick-grid" id="mQuickGrid"></div>
+
+  <div class="m-section">
+    <div class="m-section-title">🔥 热门拼客 <span class="more" onclick="switchTab('pinke')">查看全部 ›</span></div>
+    <div id="mHotList"></div>
+  </div>
+
+  <div class="m-section">
+    <div class="m-section-title">🏪 优质商家 <span class="more" onclick="switchTab('merchant')">查看全部 ›</span></div>
+    <div id="mMerList"></div>
+  </div>
+</div>
+
+<!-- PINKE TAB -->
+<div id="tab-pinke" style="display:none">
+  <div style="padding:var(--safe-top) 16px 0;background:var(--white)">
+    <h2 style="font-size:1.1rem;font-weight:700;padding:12px 0 8px">拼客活动</h2>
+  </div>
+  <div class="chip-row" id="mPinkeChips" style="padding-top:10px"></div>
+  <div style="padding:0 16px" id="mPinkeList"></div>
+  <div class="m-empty" id="mPinkeEmpty" style="display:none"><div class="icon">🔍</div><p>没有找到活动</p></div>
+</div>
+
+<!-- MERCHANT TAB -->
+<div id="tab-merchant" style="display:none">
+  <div style="padding:var(--safe-top) 16px 0;background:var(--white)">
+    <h2 style="font-size:1.1rem;font-weight:700;padding:12px 0 8px">商家优惠</h2>
+  </div>
+  <div style="padding:0 16px" id="mMerFull"></div>
+</div>
+
+<!-- MY TAB -->
+<div id="tab-my" style="display:none">
+  <div id="myContent"></div>
+</div>
+
+</div><!-- /page-scroll -->
+
+<!-- === TAB BAR === -->
+<nav class="tab-bar">
+  <div class="tab-item active" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span>首页</span></div>
+  <div class="tab-item" onclick="switchTab('pinke')"><span class="tab-icon">🎯</span><span>拼客</span></div>
+  <div class="tab-item" onclick="switchTab('merchant')"><span class="tab-icon">🏪</span><span>商家</span></div>
+  <div class="tab-item" onclick="switchTab('my')" style="position:relative"><span class="tab-icon">👤</span><span>我的</span></div>
+</nav>
+
+<!-- === DETAIL SHEET === -->
+<div class="sheet-overlay" id="detailSheet" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet" id="sheetContent"></div>
+</div>
+
+<!-- === LOGIN SHEET === -->
+<div class="sheet-overlay" id="loginSheet" onclick="if(event.target===this)closeLoginSheet()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="login-form">
+      <h2>欢迎来到台州拼客网</h2>
+      <p>登录后可发布和参与拼客活动</p>
+      <div id="loginMode">
+        <div class="form-group"><label>邮箱</label><input type="email" id="mLoginEmail" placeholder="请输入邮箱"></div>
+        <div class="form-group"><label>密码</label><input type="password" id="mLoginPwd" placeholder="请输入密码"></div>
+        <button class="btn-login" onclick="mDoLogin()">登 录</button>
+        <p style="text-align:center;margin-top:12px;font-size:.82rem;color:var(--text-s)">还没有账号？<a href="#" style="color:var(--primary);font-weight:600" onclick="toggleRegMode()">去注册</a></p>
+      </div>
+      <div id="regMode" style="display:none">
+        <div class="form-group"><label>邮箱</label><input type="email" id="mRegEmail" placeholder="请输入邮箱"></div>
+        <div class="form-group"><label>昵称</label><input type="text" id="mRegName" placeholder="给自己取个名字"></div>
+        <div class="form-group"><label>密码（至少6位）</label><input type="password" id="mRegPwd" placeholder="请设置密码"></div>
+        <button class="btn-login" onclick="mDoRegister()">注 册</button>
+        <p style="text-align:center;margin-top:12px;font-size:.82rem;color:var(--text-s)">已有账号？<a href="#" style="color:var(--primary);font-weight:600" onclick="toggleRegMode()">去登录</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === PUBLISH SHEET === -->
+<div class="sheet-overlay" id="publishSheet" onclick="if(event.target===this){document.getElementById('publishSheet').classList.remove('open')}">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="publish-sheet">
+      <h2>➕ 发布新拼客</h2>
+      <div class="form-group"><label>活动标题</label><input id="pTitle" placeholder="例：周末美食探秘"></div>
+      <div class="form-group"><label>分类</label><select id="pCat"><option value="meishi">美食聚餐</option><option value="lvyou">旅游出行</option><option value="yule">休闲娱乐</option><option value="gouwu">购物拼团</option><option value="jianshen">运动健身</option><option value="xuexi">学习培训</option><option value="qinzi">亲子活动</option><option value="jujia">家居生活</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group"><label>价格（元/人）</label><input type="number" id="pPrice" value="0" min="0"></div>
+        <div class="form-group"><label>成团人数</label><input type="number" id="pMin" value="5" min="2"></div>
+      </div>
+      <div class="form-group"><label>活动地点</label><input id="pLoc" placeholder="例：椒江区·海门老街"></div>
+      <div class="form-group"><label>截止日期</label><input type="date" id="pDate"></div>
+      <div class="form-group"><label>活动描述</label><textarea id="pDesc" placeholder="详细描述..." rows="3"></textarea></div>
+      <button class="btn-login" onclick="mDoPublish()">发布活动</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<div class="m-toast" id="mToast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL='https://nnzsreyhqkhrjmqhvbmm.supabase.co';
+const SB_KEY='sb_publishable_dWUMEdKE3JQFbLvnoGeWCw_iseue-gc';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+const CAT_MAP={meishi:'美食聚餐',lvyou:'旅游出行',yule:'休闲娱乐',gouwu:'购物拼团',jianshen:'运动健身',xuexi:'学习培训',qinzi:'亲子活动',jujia:'家居生活'};
+const CAT_ICONS={meishi:'🍜',lvyou:'✈️',yule:'🎬',gouwu:'🛒',jianshen:'⚽',xuexi:'📚',qinzi:'👨‍👩‍👧',jujia:'🏠'};
+const CAT_COLORS={meishi:'#ff6b35',lvyou:'#2563eb',yule:'#9c27b0',gouwu:'#e91e63',jianshen:'#4caf50',xuexi:'#ff9800',qinzi:'#00bcd4',jujia:'#795548'};
+const IMG={meishi:'https://agent.qianwen.com/service/97a410ed-3db0-47/c3539f0e3406290b5348ef454db82097',lvyou:'https://agent.qianwen.com/service/6b10c621-8adc-46/7b80b2ec3dbf3163276fee7b85b22b13',yule:'https://agent.qianwen.com/service/6b10c621-8adc-46/f7b8aa88c450c13800f802fe31bd4d94',jianshen:'https://agent.qianwen.com/service/6b10c621-8adc-46/c104748a22cad5c9299df57480775171',qinzi:'https://agent.qianwen.com/service/97a410ed-3db0-47/e415ffcf123bf9cc325e71331a44c2eb',gouwu:'https://agent.qianwen.com/service/97a410ed-3db0-47/949dbf58b7a75c87e338a80ce413d581'};
+
+let activities=[],merchants=[],user=null,favorites=[];
+
+// === Init ===
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session?.user){user=session.user;await loadUserData();}
+  await loadData();
+  renderAll();
+  sb.auth.onAuthStateChange(async(ev,s)=>{
+    if(ev==='SIGNED_IN'&&s?.user){user=s.user;await loadUserData();renderAll();}
+    else if(ev==='SIGNED_OUT'){user=null;favorites=[];renderAll();}
+  });
+})();
+
+async function loadData(){
+  const[a,m]=await Promise.all([
+    sb.from('pinke_activities').select('*').order('created_at',{ascending:false}),
+    sb.from('merchants').select('*').order('id')
+  ]);
+  activities=a.data||[];
+  merchants=m.data||[];
+}
+async function loadUserData(){
+  if(!user)return;
+  const{data}=await sb.from('user_favorites').select('activity_id').eq('user_id',user.id);
+  favorites=(data||[]).map(r=>r.activity_id);
+}
+
+// === Tab Navigation ===
+function switchTab(tab){
+  ['home','pinke','merchant','my'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.tab-item').forEach((el,i)=>{
+    el.classList.toggle('active',['home','pinke','merchant','my'][i]===tab);
+  });
+  document.getElementById('pageScroll').scrollTop=0;
+  if(tab==='pinke')renderPinkeList();
+  if(tab==='merchant')renderMerFull();
+  if(tab==='my')renderMy();
+}
+
+// === Render ===
+function renderAll(){
+  // Banner stats
+  const total=activities.length,joined=activities.reduce((s,a)=>s+(a.current_people||0),0);
+  document.getElementById('mBannerStats').innerHTML=`
+    <div class="s-item"><div class="s-num">${total}</div><div class="s-label">活动</div></div>
+    <div class="s-item"><div class="s-num">${joined}</div><div class="s-label">参与人次</div></div>
+    <div class="s-item"><div class="s-num">${merchants.length}</div><div class="s-label">商家</div></div>
+  `;
+  // Quick grid
+  document.getElementById('mQuickGrid').innerHTML=Object.entries(CAT_MAP).map(([id,name])=>
+    `<div class="quick-item" onclick="filterByCat('${id}')"><div class="q-icon" style="background:${CAT_COLORS[id]}15">${CAT_ICONS[id]}</div><div class="q-name">${name}</div></div>`
+  ).join('');
+  // Hot list
+  const hot=activities.filter(a=>a.status==='hot').concat(activities.filter(a=>a.status!=='hot')).slice(0,4);
+  document.getElementById('mHotList').innerHTML=hot.map(cardHTML).join('');
+  // Merchants
+  document.getElementById('mMerList').innerHTML=merchants.slice(0,4).map(merCardHTML).join('');
+  // Chips
+  let chips='<div class="chip active" onclick="filterChip(this,\'all\')">全部</div>';
+  Object.entries(CAT_MAP).forEach(([id,name])=>{chips+=`<div class="chip" onclick="filterChip(this,'${id}')">${CAT_ICONS[id]} ${name}</div>`;});
+  document.getElementById('mPinkeChips').innerHTML=chips;
+}
+
+function cardHTML(a){
+  const pct=Math.round((a.current_people/a.min_people)*100);
+  const img=IMG[a.category]||IMG.meishi;
+  const badge=a.status==='hot'?'<span class="m-badge hot">🔥 热门</span>':a.status==='new'?'<span class="m-badge new">✨ 最新</span>':a.status==='full'?'<span class="m-badge full">已满</span>':'';
+  const full=a.current_people>=a.min_people;
+  return`<div class="m-card" onclick="showDetail(${a.id})">
+    <div class="m-card-img"><img src="${img}" alt="${a.title}" onerror="this.style.display='none'">${badge}<div class="m-price-tag">${a.price>0?'¥'+a.price+'/人':'免费'}</div></div>
+    <div class="m-card-body">
+      <div class="m-card-title">${a.title}</div>
+      <div class="m-card-info"><span>📍${(a.location||'').split('·')[1]||a.location}</span><span>📅${a.deadline||''}</span><span>👁${a.views||0}</span></div>
+      <div class="m-card-bottom">
+        <div class="m-card-progress"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${full?'var(--accent)':'var(--primary)'}"></div></div><div class="bar-text">${a.current_people}/${a.min_people}人${full?' · 已成团！':''}</div></div>
+        <div class="m-card-btn${full?' disabled':''}">${full?'已满员':'参与'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function merCardHTML(m){
+  const img=IMG[m.category]||IMG.meishi;
+  const stars='★'.repeat(Math.floor(m.rating||0));
+  return`<div class="m-mer-card" onclick="showMerDetail(${m.id})">
+    <div class="mer-img"><img src="${img}" alt="${m.name}" onerror="this.style.display='none'"></div>
+    <div class="mer-info">
+      <div class="mer-name">${m.name}</div>
+      <div class="mer-rating">${stars} ${m.rating} <span style="color:var(--text-l)">(${m.reviews||0})</span></div>
+      <div class="mer-addr">📍 ${m.address||''}</div>
+      ${m.discount?`<div class="mer-discount">🏷️ ${m.discount}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderPinkeList(cat){
+  let list=cat&&cat!=='all'?activities.filter(a=>a.category===cat):activities;
+  document.getElementById('mPinkeList').innerHTML=list.map(cardHTML).join('');
+  document.getElementById('mPinkeEmpty').style.display=list.length?'none':'block';
+}
+function renderMerFull(){
+  document.getElementById('mMerFull').innerHTML=merchants.map(merCardHTML).join('');
+}
+function filterByCat(cat){switchTab('pinke');filterChip(document.querySelectorAll('.chip')[Object.keys(CAT_MAP).indexOf(cat)+1],cat);}
+function filterChip(el,cat){
+  el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderPinkeList(cat);
+}
+
+// === Detail ===
+function showDetail(id){
+  const a=activities.find(x=>x.id===id);if(!a)return;
+  const pct=Math.round((a.current_people/a.min_people)*100);
+  const full=a.current_people>=a.min_people;
+  const isFav=favorites.includes(id);
+  const img=IMG[a.category]||IMG.meishi;
+  document.getElementById('sheetContent').innerHTML=`
+    <div class="sheet-handle"></div>
+    <div class="sheet-img"><img src="${img}" alt="${a.title}" onerror="this.style.display='none'"><div class="close-btn" onclick="closeSheet()">✕</div></div>
+    <div class="sheet-body">
+      <h2>${a.title}</h2>
+      <div class="sheet-info-row">
+        <div class="sheet-info-item"><span class="dot" style="background:var(--primary)"></span>${a.price>0?'¥'+a.price+'/人':'免费'}</div>
+        <div class="sheet-info-item"><span class="dot" style="background:var(--accent)"></span>${a.current_people}/${a.min_people}人</div>
+        <div class="sheet-info-item"><span class="dot" style="background:var(--secondary)"></span>${a.location||''}</div>
+        <div class="sheet-info-item"><span class="dot" style="background:#f59e0b"></span>截止 ${a.deadline||'待定'}</div>
+      </div>
+      <div style="margin-bottom:14px"><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:${full?'var(--accent)':'var(--primary)'};border-radius:3px"></div></div><div style="font-size:.75rem;color:var(--text-s);margin-top:4px">${full?'🎉 已成团！':'还差'+(a.min_people-a.current_people)+'人成团'}</div></div>
+      <div class="sheet-desc">${a.description||'暂无描述'}</div>
+      <div class="sheet-organizer"><div class="avatar">${(a.organizer||'组')[0]}</div><div><div style="font-weight:600;font-size:.88rem">${a.organizer||'拼客组织者'}</div><div style="font-size:.75rem;color:var(--text-s)">${a.phone||''}</div></div></div>
+      <div class="sheet-bottom-bar">
+        <div class="btn-fav" onclick="toggleFav(${id})">${isFav?'❤️':'🤍'}</div>
+        <div class="btn-join${full?' full':''}" onclick="${full?"mToast('该活动已满员')":"mJoin("+id+")"}">${full?'已满员':'🚀 立即参与'}</div>
+      </div>
+    </div>`;
+  document.getElementById('detailSheet').classList.add('open');
+}
+function showMerDetail(id){
+  const m=merchants.find(x=>x.id===id);if(!m)return;
+  const img=IMG[m.category]||IMG.meishi;
+  const stars='★'.repeat(Math.floor(m.rating||0));
+  document.getElementById('sheetContent').innerHTML=`
+    <div class="sheet-handle"></div>
+    <div class="sheet-img"><img src="${img}" alt="${m.name}" onerror="this.style.display='none'"><div class="close-btn" onclick="closeSheet()">✕</div></div>
+    <div class="sheet-body">
+      <h2>${m.name}</h2>
+      <div style="margin-bottom:10px"><span style="color:#f59e0b">${stars}</span> ${m.rating} <span style="color:var(--text-l);font-size:.82rem">(${m.reviews||0}条评价)</span></div>
+      <div class="sheet-info-row">
+        <div class="sheet-info-item"><span class="dot"></span>${m.address||''}</div>
+        <div class="sheet-info-item"><span class="dot" style="background:var(--secondary)"></span>${m.phone||''}</div>
+        <div class="sheet-info-item"><span class="dot" style="background:var(--accent)"></span>${m.open_time||''}</div>
+      </div>
+      ${m.discount?`<div style="padding:10px 14px;background:var(--primary-light);border-radius:10px;margin-bottom:14px;font-size:.88rem;color:var(--primary);font-weight:600">🏷️ ${m.discount}</div>`:''}
+      <div class="sheet-desc">${m.description||''}</div>
+      ${(m.tags||[]).length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${m.tags.map(t=>`<span style="padding:4px 10px;background:var(--bg);border-radius:10px;font-size:.75rem">${t}</span>`).join('')}</div>`:''}
+      <div class="sheet-bottom-bar">
+        <div class="btn-join" onclick="mToast('已收藏商家')">⭐ 收藏</div>
+        <div class="btn-join" style="background:var(--secondary)" onclick="mToast('已拨打')">📞 联系</div>
+      </div>
+    </div>`;
+  document.getElementById('detailSheet').classList.add('open');
+}
+function closeSheet(){document.getElementById('detailSheet').classList.remove('open');}
+
+// === Auth ===
+function showLogin(){document.getElementById('loginSheet').classList.add('open');}
+function closeLoginSheet(){document.getElementById('loginSheet').classList.remove('open');}
+function toggleRegMode(){
+  const lm=document.getElementById('loginMode'),rm=document.getElementById('regMode');
+  if(lm.style.display==='none'){lm.style.display='block';rm.style.display='none';}
+  else{lm.style.display='none';rm.style.display='block';}
+}
+async function mDoLogin(){
+  const email=document.getElementById('mLoginEmail').value.trim();
+  const pwd=document.getElementById('mLoginPwd').value;
+  if(!email||!pwd)return mToast('请输入邮箱和密码');
+  mToast('登录中...');
+  const{error}=await sb.auth.signInWithPassword({email,password:pwd});
+  if(error)return mToast('登录失败：'+error.message);
+  closeLoginSheet();mToast('登录成功！');
+}
+async function mDoRegister(){
+  const email=document.getElementById('mRegEmail').value.trim();
+  const name=document.getElementById('mRegName').value.trim();
+  const pwd=document.getElementById('mRegPwd').value;
+  if(!email||!email.includes('@'))return mToast('请输入正确邮箱');
+  if(!name)return mToast('请输入昵称');
+  if(!pwd||pwd.length<6)return mToast('密码至少6位');
+  mToast('注册中...');
+  const{error}=await sb.auth.signUp({email,password:pwd,options:{data:{nickname:name}}});
+  if(error)return mToast('注册失败：'+error.message);
+  closeLoginSheet();mToast('注册成功！');
+}
+
+// === Actions ===
+async function mJoin(id){
+  if(!user){showLogin();return;}
+  const a=activities.find(x=>x.id===id);if(!a)return;
+  if(a.current_people>=a.min_people)return mToast('活动已满员');
+  const{error}=await sb.from('user_joins').upsert({user_id:user.id,activity_id:id});
+  if(error&&!error.message.includes('duplicate'))return mToast('参与失败');
+  const newCount=a.current_people+1;
+  await sb.from('pinke_activities').update({current_people:newCount,status:newCount>=a.min_people?'full':a.status}).eq('id',id);
+  a.current_people=newCount;
+  closeSheet();renderAll();
+  mToast(newCount>=a.min_people?'🎉 已成团！':'参与成功！还差'+(a.min_people-newCount)+'人');
+}
+async function toggleFav(id){
+  if(!user){showLogin();return;}
+  const idx=favorites.indexOf(id);
+  if(idx>-1){favorites.splice(idx,1);await sb.from('user_favorites').delete().eq('user_id',user.id).eq('activity_id',id);mToast('已取消收藏');}
+  else{favorites.push(id);await sb.from('user_favorites').insert({user_id:user.id,activity_id:id});mToast('已收藏');}
+  showDetail(id);
+}
+function mDoPublish(){
+  if(!user){showLogin();return;}
+  const data={
+    title:document.getElementById('pTitle').value.trim(),
+    category:document.getElementById('pCat').value,
+    price:parseInt(document.getElementById('pPrice').value)||0,
+    original_price:0,min_people:parseInt(document.getElementById('pMin').value)||5,
+    current_people:1,deadline:document.getElementById('pDate').value||null,
+    location:document.getElementById('pLoc').value.trim(),
+    description:document.getElementById('pDesc').value.trim(),
+    status:'new',created_by:user.id,organizer:user.user_metadata?.nickname||'拼友',phone:''
+  };
+  if(!data.title||!data.location||!data.description)return mToast('请填写必填项');
+  mToast('发布中...');
+  sb.from('pinke_activities').insert(data).then(async({error})=>{
+    if(error)return mToast('发布失败：'+error.message);
+    document.getElementById('publishSheet').classList.remove('open');
+    await loadData();renderAll();mToast('发布成功！');
+  });
+}
+async function mDoLogout(){
+  await sb.auth.signOut();mToast('已退出登录');renderMy();
+}
+
+// === My Page ===
+function renderMy(){
+  const el=document.getElementById('myContent');
+  if(!user){
+    el.innerHTML=`<div style="padding:60px 20px;text-align:center"><div style="font-size:3rem;margin-bottom:12px">👤</div><p style="color:var(--text-s);margin-bottom:20px">登录后享受更多功能</p><button onclick="showLogin()" style="padding:12px 32px;border-radius:24px;background:var(--primary);color:var(--white);font-size:1rem;font-weight:600;border:none">登录 / 注册</button></div>`;
+    return;
+  }
+  const name=user.user_metadata?.nickname||'拼友';
+  const myActs=activities.filter(a=>a.created_by===user.id);
+  el.innerHTML=`
+    <div class="my-header"><div class="my-avatar">${name[0]}</div><div class="my-name">${name}</div><div class="my-email">${user.email}</div></div>
+    <div class="my-stats"><div class="my-stat"><div class="num">${myActs.length}</div><div class="label">我发布的</div></div><div class="my-stat"><div class="num">${favorites.length}</div><div class="label">收藏</div></div><div class="my-stat"><div class="num">${activities.filter(a=>a.current_people>=a.min_people).length}</div><div class="label">已成团</div></div></div>
+    <div style="padding:0 16px 8px;display:flex;gap:10px">
+      <button onclick="document.getElementById('publishSheet').classList.add('open')" style="flex:1;padding:12px;border-radius:12px;background:var(--primary);color:var(--white);font-size:.9rem;font-weight:600;border:none">➕ 发布拼客</button>
+    </div>
+    <div class="my-menu">
+      <div class="my-menu-item"><span class="mi-icon">📋</span>我的拼客<span class="mi-arrow">›</span></div>
+      <div class="my-menu-item"><span class="mi-icon">⭐</span>我的收藏<span class="mi-arrow">›</span></div>
+      <div class="my-menu-item"><span class="mi-icon">📝</span>参与记录<span class="mi-arrow">›</span></div>
+      <div class="my-menu-item" onclick="window.open('admin.html','_blank')"><span class="mi-icon">⚙️</span>管理后台<span class="mi-arrow">›</span></div>
+      <div class="my-menu-item" onclick="mDoLogout()"><span class="mi-icon">🚪</span>退出登录<span class="mi-arrow">›</span></div>
+    </div>
+  `;
+}
+
+// === Search ===
+function doSearch(){
+  const q=document.getElementById('mSearchInput').value.trim().toLowerCase();
+  switchTab('pinke');
+  if(!q){renderPinkeList();return;}
+  const list=activities.filter(a=>a.title.toLowerCase().includes(q)||a.description.toLowerCase().includes(q)||(a.location||'').toLowerCase().includes(q));
+  document.getElementById('mPinkeList').innerHTML=list.map(cardHTML).join('');
+  document.getElementById('mPinkeEmpty').style.display=list.length?'none':'block';
+}
+
+// === Toast ===
+function mToast(msg){const t=document.getElementById('mToast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+</script>
+</body>
+</html>
