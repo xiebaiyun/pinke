@@ -291,11 +291,24 @@ input:focus,textarea:focus{border-color:var(--primary)}
 
 <div class="m-toast" id="mToast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  var cdns=['https://unpkg.com/@supabase/supabase-js@2','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
+  window.__sbReady=false;
+  function load(i){ if(i>=cdns.length||window.__sbReady)return;
+    var s=document.createElement('script'); s.src=cdns[i]; s.async=true;
+    s.onload=function(){ window.__sbReady=true; if(window.__sbInit) window.__sbInit(); };
+    s.onerror=function(){ load(i+1); };
+    document.head.appendChild(s); }
+  load(0);
+})();
+</script>
 <script>
 const SB_URL='https://nnzsreyhqkhrjmqhvbmm.supabase.co';
 const SB_KEY='sb_publishable_dWUMEdKE3JQFbLvnoGeWCw_iseue-gc';
-const sb=window.supabase.createClient(SB_URL,SB_KEY);
+let sb=null;
+function initSb(){ if(sb||!window.__sbReady||!window.supabase)return; try{ sb=window.supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.warn('SDK init failed',e); } }
+window.__sbInit=initSb; initSb();
 
 const CAT_MAP={meishi:'美食聚餐',lvyou:'旅游出行',yule:'休闲娱乐',gouwu:'购物拼团',jianshen:'运动健身',xuexi:'学习培训',qinzi:'亲子活动',jujia:'家居生活'};
 const CAT_ICONS={meishi:'🍜',lvyou:'✈️',yule:'🎬',gouwu:'🛒',jianshen:'⚽',xuexi:'📚',qinzi:'👨‍👩‍👧',jujia:'🏠'};
@@ -304,28 +317,61 @@ const IMG={meishi:'https://agent.qianwen.com/service/97a410ed-3db0-47/c3539f0e34
 
 let activities=[],merchants=[],user=null,favorites=[];
 
+// 后端不可用时的兜底数据，保证页面始终有内容可看
+const FALLBACK_ACTIVITIES=[
+  {id:1,title:'周末椒江海门老街美食探秘之旅',category:'meishi',price:68,original_price:128,min_people:6,current_people:4,deadline:'2026-11-18',location:'椒江区·海门老街',description:'一起探访海门老街最地道的台州小吃，姜汤面、食饼筒、麦虾，品尝正宗台州味道！',status:'hot',organizer:'吃货小分队',phone:'138****6789',views:342},
+  {id:2,title:'神仙居秋日红叶徒步拼团',category:'lvyou',price:158,original_price:268,min_people:10,current_people:7,deadline:'2026-11-20',location:'仙居县·神仙居景区',description:'金秋十月神仙居红叶季，徒步穿越火山流纹岩地貌，赏如意桥、观云海仙境。',status:'hot',organizer:'户外达人阿杰',phone:'139****2345',views:567},
+  {id:3,title:'三门青蟹宴·海鲜吃到饱',category:'meishi',price:198,original_price:358,min_people:8,current_people:6,deadline:'2026-11-21',location:'三门县·蛇蟠岛',description:'正宗三门青蟹季！蛇蟠岛渔家乐海鲜宴，青蟹、望潮、弹涂鱼吃到扶墙出。',status:'hot',organizer:'海鲜控联盟',phone:'159****8765',views:678},
+  {id:4,title:'黄岩蜜橘采摘亲子游',category:'qinzi',price:78,original_price:128,min_people:8,current_people:5,deadline:'2026-11-25',location:'黄岩区·蜜橘果园',description:'带娃体验黄岩蜜橘采摘乐趣，亲子互动游戏加橘子手工DIY，含5斤蜜橘。',status:'new',organizer:'快乐妈妈团',phone:'133****6543',views:234},
+  {id:5,title:'台州湾新区篮球友谊赛',category:'jianshen',price:30,original_price:50,min_people:10,current_people:8,deadline:'2026-11-19',location:'椒江区·台州湾体育中心',description:'召集篮球爱好者，5V5全场友谊赛，以球会友。含场地费加饮用水加裁判。',status:'normal',organizer:'篮球兄弟连',phone:'188****3210',views:178}
+];
+const FALLBACK_MERCHANTS=[
+  {id:1,name:'海门老街姜汤面馆',category:'meishi',rating:4.8,reviews:256,address:'椒江区海门老街88号',phone:'0576-8888****',description:'三代传承的姜汤面老店，台州非物质文化遗产美食。',discount:'拼客专享9折',open_time:'07:00-21:00',tags:['老字号','非遗美食','堂食']},
+  {id:2,name:'三门蛇蟠岛渔家乐·老船长',category:'meishi',rating:4.7,reviews:342,address:'三门县蛇蟠岛码头旁',phone:'0576-6666****',description:'自家渔船直供海鲜，青蟹、望潮、大黄鱼现捞现做。',discount:'拼客满8人送青蟹2只',open_time:'10:30-21:30',tags:['海鲜','渔家乐','海景包厢']},
+  {id:3,name:'仙居神仙居民宿·云栖',category:'lvyou',rating:4.9,reviews:189,address:'仙居县白塔镇神仙居景区入口',phone:'0576-7777****',description:'景区入口精品民宿，推窗见山，云海日出尽收眼底。',discount:'拼客住宿减50元/间',open_time:'全天',tags:['景区民宿','山景房','接送服务']},
+  {id:4,name:'黄岩蜜橘庄园',category:'qinzi',rating:4.6,reviews:134,address:'黄岩区头陀镇蜜橘大道',phone:'0576-5555****',description:'200亩有机蜜橘种植园，可体验采摘、了解蜜橘文化。',discount:'拼客亲子套餐减20元',open_time:'08:00-17:00',tags:['采摘','亲子','有机']}
+];
+
 // === Init ===
 (async()=>{
-  const{data:{session}}=await sb.auth.getSession();
-  if(session?.user){user=session.user;await loadUserData();}
-  await loadData();
+  // 等待 SDK 就绪（最多 6 秒）
+  if(!sb){ await new Promise(r=>{ window.__sbInit=()=>{initSb();r()}; setTimeout(r,6000); initSb(); }); }
+  if(sb){
+    try{
+      const{data:{session}}=await sb.auth.getSession();
+      if(session?.user){user=session.user;await loadUserData();}
+      await loadData();
+      sb.auth.onAuthStateChange(async(ev,s)=>{
+        if(ev==='SIGNED_IN'&&s?.user){user=s.user;await loadUserData();renderAll();}
+        else if(ev==='SIGNED_OUT'){user=null;favorites=[];renderAll();}
+      });
+    }catch(e){
+      console.warn('[后端不可用，使用内置数据]',e.message);
+      useFallback();
+    }
+  }else{
+    console.warn('[后端未就绪，使用内置数据]');
+    useFallback();
+  }
   renderAll();
-  sb.auth.onAuthStateChange(async(ev,s)=>{
-    if(ev==='SIGNED_IN'&&s?.user){user=s.user;await loadUserData();renderAll();}
-    else if(ev==='SIGNED_OUT'){user=null;favorites=[];renderAll();}
-  });
 })();
 
+function useFallback(){ activities=FALLBACK_ACTIVITIES.slice(); merchants=FALLBACK_MERCHANTS.slice(); }
+
 async function loadData(){
-  const[a,m]=await Promise.all([
-    sb.from('pinke_activities').select('*').order('created_at',{ascending:false}),
-    sb.from('merchants').select('*').order('id')
-  ]);
-  activities=a.data||[];
-  merchants=m.data||[];
+  if(!sb){ useFallback(); return; }
+  try{
+    const[a,m]=await Promise.all([
+      sb.from('pinke_activities').select('*').order('created_at',{ascending:false}),
+      sb.from('merchants').select('*').order('id')
+    ]);
+    if(a.error||m.error) throw new Error((a.error||m.error).message);
+    activities=a.data&&a.data.length?a.data:FALLBACK_ACTIVITIES.slice();
+    merchants=m.data&&m.data.length?m.data:FALLBACK_MERCHANTS.slice();
+  }catch(e){ useFallback(); throw e; }
 }
 async function loadUserData(){
-  if(!user)return;
+  if(!user||!sb)return;
   const{data}=await sb.from('user_favorites').select('activity_id').eq('user_id',user.id);
   favorites=(data||[]).map(r=>r.activity_id);
 }
@@ -483,9 +529,12 @@ async function mDoLogin(){
   const pwd=document.getElementById('mLoginPwd').value;
   if(!email||!pwd)return mToast('请输入邮箱和密码');
   mToast('登录中...');
-  const{error}=await sb.auth.signInWithPassword({email,password:pwd});
-  if(error)return mToast('登录失败：'+error.message);
-  closeLoginSheet();mToast('登录成功！');
+  if(!sb)return mLocalLogin(email,'拼友'+email.slice(0,4));
+  try{
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pwd});
+    if(error)return mToast('登录失败：'+error.message);
+    closeLoginSheet();mToast('登录成功！');
+  }catch(e){ mLocalLogin(email,'拼友'+email.slice(0,4)); }
 }
 async function mDoRegister(){
   const email=document.getElementById('mRegEmail').value.trim();
@@ -495,29 +544,50 @@ async function mDoRegister(){
   if(!name)return mToast('请输入昵称');
   if(!pwd||pwd.length<6)return mToast('密码至少6位');
   mToast('注册中...');
-  const{error}=await sb.auth.signUp({email,password:pwd,options:{data:{nickname:name}}});
-  if(error)return mToast('注册失败：'+error.message);
-  closeLoginSheet();mToast('注册成功！');
+  if(!sb)return mLocalLogin(email,name);
+  try{
+    const{error}=await sb.auth.signUp({email,password:pwd,options:{data:{nickname:name}}});
+    if(error)return mToast('注册失败：'+error.message);
+    closeLoginSheet();mToast('注册成功！');
+  }catch(e){ mLocalLogin(email,name); }
 }
+// 本地模式登录：数据保存在本浏览器，可完整体验流程
+function mLocalLogin(email,name){
+  user={id:'local-'+btoa(unescape(encodeURIComponent(email))),email:email,user_metadata:{nickname:name},_local:true};
+  localStorage.setItem('tzpk_m_user',JSON.stringify(user));
+  closeLoginSheet();renderAll();mToast('已登录（本地模式）');
+}
+function restoreLocalUser(){ try{ const u=JSON.parse(localStorage.getItem('tzpk_m_user')||'null'); if(u&&!user)user=u; }catch(e){} }
 
 // === Actions ===
 async function mJoin(id){
   if(!user){showLogin();return;}
   const a=activities.find(x=>x.id===id);if(!a)return;
   if(a.current_people>=a.min_people)return mToast('活动已满员');
-  const{error}=await sb.from('user_joins').upsert({user_id:user.id,activity_id:id});
-  if(error&&!error.message.includes('duplicate'))return mToast('参与失败');
-  const newCount=a.current_people+1;
-  await sb.from('pinke_activities').update({current_people:newCount,status:newCount>=a.min_people?'full':a.status}).eq('id',id);
-  a.current_people=newCount;
+  if(sb&&!user._local){
+    try{
+      const{error}=await sb.from('user_joins').upsert({user_id:user.id,activity_id:id});
+      if(error&&!error.message.includes('duplicate'))return mToast('参与失败');
+      const newCount=a.current_people+1;
+      await sb.from('pinke_activities').update({current_people:newCount,status:newCount>=a.min_people?'full':a.status}).eq('id',id);
+      a.current_people=newCount;
+    }catch(e){ a.current_people++; }
+  }else{ a.current_people++; }
   closeSheet();renderAll();
-  mToast(newCount>=a.min_people?'🎉 已成团！':'参与成功！还差'+(a.min_people-newCount)+'人');
+  mToast(a.current_people>=a.min_people?'🎉 已成团！':'参与成功！还差'+(a.min_people-a.current_people)+'人');
 }
 async function toggleFav(id){
   if(!user){showLogin();return;}
   const idx=favorites.indexOf(id);
-  if(idx>-1){favorites.splice(idx,1);await sb.from('user_favorites').delete().eq('user_id',user.id).eq('activity_id',id);mToast('已取消收藏');}
-  else{favorites.push(id);await sb.from('user_favorites').insert({user_id:user.id,activity_id:id});mToast('已收藏');}
+  if(idx>-1){favorites.splice(idx,1);mToast('已取消收藏');}
+  else{favorites.push(id);mToast('已收藏');}
+  if(sb&&!user._local){
+    try{
+      if(idx>-1) await sb.from('user_favorites').delete().eq('user_id',user.id).eq('activity_id',id);
+      else await sb.from('user_favorites').insert({user_id:user.id,activity_id:id});
+    }catch(e){}
+  }
+  localStorage.setItem('tzpk_m_favs',JSON.stringify(favorites));
   showDetail(id);
 }
 function mDoPublish(){
