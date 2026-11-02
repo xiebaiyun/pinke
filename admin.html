@@ -362,12 +362,26 @@ tr:hover td{background:#f8fafc}
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Supabase SDK 多 CDN 容错加载
+(function(){
+  var cdns=['https://unpkg.com/@supabase/supabase-js@2','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
+  window.__sbReady=false;
+  function load(i){ if(i>=cdns.length||window.__sbReady)return;
+    var s=document.createElement('script'); s.src=cdns[i]; s.async=true;
+    s.onload=function(){ window.__sbReady=true; if(window.__sbInit) window.__sbInit(); };
+    s.onerror=function(){ load(i+1); };
+    document.head.appendChild(s); }
+  load(0);
+})();
+</script>
 <script>
 // === 配置（与前台相同） ===
 const SB_URL = 'https://nnzsreyhqkhrjmqhvbmm.supabase.co';
 const SB_KEY = 'sb_publishable_dWUMEdKE3JQFbLvnoGeWCw_iseue-gc';
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
+let sb = null;
+function initSb(){ if(sb||!window.__sbReady||!window.supabase) return; try{ sb = window.supabase.createClient(SB_URL, SB_KEY); }catch(e){ console.warn('SDK init failed',e); } }
+window.__sbInit = initSb; initSb();
 
 const CAT_MAP = {meishi:'美食聚餐',lvyou:'旅游出行',yule:'休闲娱乐',gouwu:'购物拼团',jianshen:'运动健身',xuexi:'学习培训',qinzi:'亲子活动',jujia:'家居生活'};
 const STATUS_MAP = {hot:['🔥 热门','badge-hot'],new:['✨ 最新','badge-new'],full:['已满','badge-full'],normal:['进行中','badge-normal']};
@@ -379,10 +393,16 @@ async function adminLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pwd = document.getElementById('loginPwd').value;
   if (!email || !pwd) return toast('请输入邮箱和密码');
+  initSb();
+  if (!sb) return toast('后端未就绪：请检查 Supabase 项目是否存在（免费项目一周不活跃会被回收）', 'error');
   toast('登录中...');
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  if (error) return toast(error.message, 'error');
-  enterAdmin(data.user);
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+    if (error) return toast(error.message, 'error');
+    enterAdmin(data.user);
+  } catch (e) {
+    toast('无法连接后端：' + e.message, 'error');
+  }
 }
 async function enterAdmin(user) {
   document.getElementById('loginPage').style.display = 'none';
