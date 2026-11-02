@@ -1279,18 +1279,24 @@ async function doLogin() {
   if (sb) {
     // 真实 Supabase 登录
     showToast('登录中...');
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { showToast('登录失败：' + error.message); return; }
-    // onAuthStateChange 会自动更新 UI
-    closeModal('loginModal');
-  } else {
-    // 本地模式降级
-    currentUser = { name: '拼友' + email.slice(0,4), phone: email, userId: null };
-    localStorage.setItem('tzpk_user', JSON.stringify(currentUser));
-    updateAuthUI();
-    closeModal('loginModal');
-    showToast('登录成功，欢迎回来！（本地模式）');
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) { showToast('登录失败：' + error.message); return; }
+      // onAuthStateChange 会自动更新 UI
+      closeModal('loginModal');
+      return;
+    } catch (netErr) {
+      // 后端不可达（项目被回收 / 网络不通），自动降级到本地模式
+      console.warn('[Supabase 不可达，切换本地模式]', netErr.message);
+      sb = null;
+    }
   }
+  // 本地模式降级
+  currentUser = { name: '拼友' + email.slice(0,4), phone: email, userId: null };
+  localStorage.setItem('tzpk_user', JSON.stringify(currentUser));
+  updateAuthUI();
+  closeModal('loginModal');
+  showToast('登录成功（本地模式）');
 }
 
 async function doRegister() {
@@ -1303,25 +1309,30 @@ async function doRegister() {
 
   if (sb) {
     showToast('注册中...');
-    const { data, error } = await sb.auth.signUp({
-      email, password,
-      options: { data: { nickname: name } }
-    });
-    if (error) { showToast('注册失败：' + error.message); return; }
-    if (data.user && !data.session) {
-      showToast('注册成功！请查收验证邮件完成验证后登录');
-    } else {
-      closeModal('loginModal');
-      showToast('注册成功，欢迎加入台州拼客网！');
+    try {
+      const { data, error } = await sb.auth.signUp({
+        email, password,
+        options: { data: { nickname: name } }
+      });
+      if (error) { showToast('注册失败：' + error.message); return; }
+      if (data.user && !data.session) {
+        showToast('注册成功！请查收验证邮件完成验证后登录');
+      } else {
+        closeModal('loginModal');
+        showToast('注册成功，欢迎加入台州拼客网！');
+      }
+      return;
+    } catch (netErr) {
+      console.warn('[Supabase 不可达，切换本地模式]', netErr.message);
+      sb = null;
     }
-  } else {
-    // 本地模式降级
-    currentUser = { name, phone: email, userId: null };
-    localStorage.setItem('tzpk_user', JSON.stringify(currentUser));
-    updateAuthUI();
-    closeModal('loginModal');
-    showToast('注册成功！（本地模式）');
   }
+  // 本地模式降级
+  currentUser = { name, phone: email, userId: null };
+  localStorage.setItem('tzpk_user', JSON.stringify(currentUser));
+  updateAuthUI();
+  closeModal('loginModal');
+  showToast('注册成功（本地模式）');
 }
 
 async function doLogout() {
