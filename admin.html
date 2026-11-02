@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>台州拼客网 · 管理后台</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#ff6b35;--primary-dark:#e55a2b;--primary-light:#fff0eb;
+  --secondary:#2563eb;--accent:#10b981;--danger:#ef4444;--warning:#f59e0b;
+  --text:#1e293b;--text-s:#64748b;--text-l:#94a3b8;
+  --bg:#f1f5f9;--white:#fff;--border:#e2e8f0;
+  --shadow:0 1px 3px rgba(0,0,0,.08);--shadow-md:0 4px 12px rgba(0,0,0,.1);
+  --radius:10px;--radius-sm:6px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  --sidebar-w:240px;
+}
+html{font-size:15px}
+body{font-family:var(--font);color:var(--text);background:var(--bg);line-height:1.5}
+a{color:inherit;text-decoration:none}
+button{border:none;cursor:pointer;font-family:inherit;font-size:.88rem}
+input,textarea,select{font-family:inherit;font-size:.88rem;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;outline:none;width:100%;transition:border-color .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--primary)}
+textarea{resize:vertical;min-height:80px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:.85rem}
+th{background:var(--bg);font-weight:600;color:var(--text-s);font-size:.78rem;text-transform:uppercase;letter-spacing:.3px}
+tr:hover td{background:#f8fafc}
+
+/* layout */
+.admin-layout{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:#1e293b;color:rgba(255,255,255,.7);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s}
+.sidebar-logo{padding:20px;font-size:1.1rem;font-weight:700;color:var(--white);border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+.sidebar-logo .icon{width:32px;height:32px;background:var(--primary);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.88rem;transition:all .2s;color:rgba(255,255,255,.6)}
+.sidebar-nav a:hover,.sidebar-nav a.active{color:var(--white);background:rgba(255,255,255,.08)}
+.sidebar-nav a.active{border-right:3px solid var(--primary);color:var(--primary)}
+.sidebar-nav .nav-group{padding:16px 20px 6px;font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.78rem}
+.sidebar-footer a{color:rgba(255,255,255,.5)}
+.sidebar-footer a:hover{color:var(--primary)}
+
+.main-area{margin-left:var(--sidebar-w);flex:1;min-height:100vh}
+.topbar{height:56px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:50}
+.topbar h2{font-size:1.1rem;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.content{padding:24px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 18px;border-radius:var(--radius-sm);font-weight:600;transition:all .2s}
+.btn-primary{background:var(--primary);color:var(--white)}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-danger{background:var(--danger);color:var(--white)}
+.btn-danger:hover{background:#dc2626}
+.btn-ghost{background:transparent;color:var(--text-s);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:5px 12px;font-size:.78rem}
+.btn-icon{width:32px;height:32px;padding:0;border-radius:var(--radius-sm);display:inline-flex;align-items:center;justify-content:center}
+
+/* cards */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--white);border-radius:var(--radius);padding:20px;border:1px solid var(--border)}
+.stat-card .label{font-size:.78rem;color:var(--text-s);margin-bottom:4px}
+.stat-card .value{font-size:1.8rem;font-weight:800}
+.stat-card .change{font-size:.75rem;margin-top:4px}
+.stat-card .change.up{color:var(--accent)}
+.stat-card .change.down{color:var(--danger)}
+
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-header h3{font-size:.95rem;font-weight:700}
+.card-body{padding:20px}
+
+/* status badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:600}
+.badge-hot{background:#fef2f2;color:#ef4444}
+.badge-new{background:#ecfdf5;color:#10b981}
+.badge-full{background:#f1f5f9;color:#64748b}
+.badge-normal{background:#eff6ff;color:#2563eb}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--white);border-radius:var(--radius);max-width:600px;width:100%;margin:40px auto;animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-box .modal-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-box .modal-hd h3{font-size:1rem;font-weight:700}
+.modal-box .modal-bd{padding:20px}
+.modal-box .modal-ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;color:var(--text-s)}
+.close-btn:hover{background:var(--border)}
+
+/* form */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;color:var(--text-s)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* login page */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e293b,#334155)}
+.login-box{background:var(--white);border-radius:var(--radius);padding:40px;max-width:400px;width:100%}
+.login-box h2{text-align:center;margin-bottom:8px;font-size:1.3rem}
+.login-box p{text-align:center;color:var(--text-s);font-size:.85rem;margin-bottom:24px}
+
+/* toast */
+.toast{position:fixed;top:70px;right:24px;padding:12px 20px;border-radius:var(--radius-sm);background:#1e293b;color:var(--white);font-size:.85rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.toast.success{background:var(--accent)}
+.toast.error{background:var(--danger)}
+
+/* search */
+.search-bar{display:flex;gap:8px;margin-bottom:16px}
+.search-bar input{max-width:300px}
+
+/* responsive */
+.mobile-toggle{display:none;width:40px;height:40px;border-radius:var(--radius-sm);background:transparent;font-size:1.2rem;color:var(--text)}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-area{margin-left:0}
+  .mobile-toggle{display:flex;align-items:center;justify-content:center}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+  .card-body{padding:12px}
+  th,td{padding:8px 6px;font-size:.78rem}
+}
+/* page views */
+.page{display:none}.page.active{display:block}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-s)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:8px}
+.chart-placeholder{height:200px;background:var(--bg);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-l);font-size:.85rem}
+.tags-input{display:flex;flex-wrap:wrap;gap:6px}
+.tag-item{padding:3px 10px;background:var(--primary-light);color:var(--primary);border-radius:12px;font-size:.78rem;display:flex;align-items:center;gap:4px}
+.tag-item .rm{cursor:pointer;font-size:.7rem}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-box">
+    <h2>🔐 管理后台</h2>
+    <p>台州拼客网管理员登录</p>
+    <div class="form-group">
+      <label>管理员邮箱</label>
+      <input type="email" id="loginEmail" placeholder="admin@example.com">
+    </div>
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="loginPwd" placeholder="请输入密码">
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;margin-top:8px" onclick="adminLogin()">登 录</button>
+    <p style="text-align:center;font-size:.75rem;color:var(--text-l);margin-top:16px">请使用管理员账号登录</p>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div id="adminLayout" class="admin-layout" style="display:none">
+  <!-- sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><div class="icon">拼</div>台州拼客网后台</div>
+    <nav class="sidebar-nav">
+      <div class="nav-group">概览</div>
+      <a href="#" class="active" data-page="dashboard" onclick="showPage('dashboard')">📊 数据面板</a>
+      <div class="nav-group">内容管理</div>
+      <a href="#" data-page="activities" onclick="showPage('activities')">🎯 拼客活动</a>
+      <a href="#" data-page="merchants" onclick="showPage('merchants')">🏪 商家管理</a>
+      <a href="#" data-page="stories" onclick="showPage('stories')">🏆 成功案例</a>
+      <div class="nav-group">用户</div>
+      <a href="#" data-page="users" onclick="showPage('users')">👥 用户列表</a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#" onclick="adminLogout()">🚪 退出登录</a>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <div class="main-area">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <h2 id="pageTitle">数据面板</h2>
+      </div>
+      <div class="topbar-actions">
+        <span id="adminName" style="font-size:.85rem;color:var(--text-s)"></span>
+        <button class="btn btn-ghost btn-sm" onclick="window.open('index.html','_blank')">🌐 查看前台</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stat-grid" id="dashStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div class="card">
+            <div class="card-header"><h3>📈 活动趋势（近7天）</h3></div>
+            <div class="card-body"><div class="chart-placeholder" id="chartArea"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🔥 分类占比</h3></div>
+            <div class="card-body"><div class="chart-placeholder" id="chartCat"></div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📋 最近活动</h3></div>
+          <div class="card-body" style="padding:0;overflow-x:auto"><table id="recentTable"><thead><tr><th>标题</th><th>分类</th><th>状态</th><th>参与/目标</th><th>发布时间</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ACTIVITIES -->
+      <div class="page" id="page-activities">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div class="search-bar" style="margin:0">
+            <input type="text" id="actSearch" placeholder="搜索活动..." oninput="renderActivities()">
+            <select id="actFilter" onchange="renderActivities()" style="width:auto;min-width:120px">
+              <option value="all">全部分类</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openActModal()">+ 新增活动</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table id="actTable"><thead><tr><th>标题</th><th>分类</th><th>价格</th><th>人数</th><th>状态</th><th>截止日期</th><th>操作</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+        <div class="empty-state" id="actEmpty" style="display:none"><div class="icon">📭</div><p>暂无活动数据</p></div>
+      </div>
+
+      <!-- MERCHANTS -->
+      <div class="page" id="page-merchants">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <div class="search-bar" style="margin:0">
+            <input type="text" id="merSearch" placeholder="搜索商家..." oninput="renderMerchants()">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openMerModal()">+ 新增商家</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table id="merTable"><thead><tr><th>商家名称</th><th>分类</th><th>评分</th><th>评价数</th><th>优惠</th><th>操作</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- STORIES -->
+      <div class="page" id="page-stories">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="font-size:.95rem">成功案例管理</h3>
+          <button class="btn btn-primary btn-sm" onclick="openStoryModal()">+ 新增案例</button>
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table id="storyTable"><thead><tr><th>标题</th><th>日期</th><th>参与人数</th><th>分类</th><th>操作</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="page" id="page-users">
+        <div class="search-bar">
+          <input type="text" id="userSearch" placeholder="搜索用户..." oninput="renderUsers()">
+        </div>
+        <div class="card">
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table id="userTable"><thead><tr><th>用户</th><th>邮箱</th><th>注册时间</th><th>发布活动</th><th>参与活动</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="actModal" onclick="if(event.target===this)closeMdl('actModal')">
+  <div class="modal-box">
+    <div class="modal-hd"><h3 id="actModalTitle">新增活动</h3><div class="close-btn" onclick="closeMdl('actModal')">✕</div></div>
+    <div class="modal-bd">
+      <input type="hidden" id="actEditId">
+      <div class="form-group"><label>活动标题 *</label><input id="actTitle" placeholder="例：周末美食探秘"></div>
+      <div class="form-row">
+        <div class="form-group"><label>分类 *</label><select id="actCat"><option value="meishi">美食聚餐</option><option value="lvyou">旅游出行</option><option value="yule">休闲娱乐</option><option value="gouwu">购物拼团</option><option value="jianshen">运动健身</option><option value="xuexi">学习培训</option><option value="qinzi">亲子活动</option><option value="jujia">家居生活</option></select></div>
+        <div class="form-group"><label>状态</label><select id="actStatus"><option value="new">最新</option><option value="hot">热门</option><option value="normal">进行中</option><option value="full">已满</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>价格（元/人）</label><input type="number" id="actPrice" value="0" min="0"></div>
+        <div class="form-group"><label>原价</label><input type="number" id="actOrigPrice" value="0" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>最低成团人数</label><input type="number" id="actMin" value="5" min="2"></div>
+        <div class="form-group"><label>当前人数</label><input type="number" id="actCur" value="1" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>截止日期</label><input type="date" id="actDeadline"></div>
+        <div class="form-group"><label>组织者</label><input id="actOrganizer" placeholder="组织者名称"></div>
+      </div>
+      <div class="form-group"><label>活动地点 *</label><input id="actLocation" placeholder="例：椒江区·海门老街"></div>
+      <div class="form-group"><label>联系电话</label><input id="actPhone" placeholder="138****8888"></div>
+      <div class="form-group"><label>活动描述 *</label><textarea id="actDesc" placeholder="详细描述活动内容..."></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeMdl('actModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveActivity()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="merModal" onclick="if(event.target===this)closeMdl('merModal')">
+  <div class="modal-box">
+    <div class="modal-hd"><h3 id="merModalTitle">新增商家</h3><div class="close-btn" onclick="closeMdl('merModal')">✕</div></div>
+    <div class="modal-bd">
+      <input type="hidden" id="merEditId">
+      <div class="form-group"><label>商家名称 *</label><input id="merName" placeholder="例：海门老街姜汤面馆"></div>
+      <div class="form-row">
+        <div class="form-group"><label>分类 *</label><select id="merCat"><option value="meishi">美食</option><option value="lvyou">旅游</option><option value="jianshen">运动</option><option value="qinzi">亲子</option><option value="xuexi">学习</option><option value="gouwu">购物</option><option value="yule">娱乐</option></select></div>
+        <div class="form-group"><label>评分</label><input type="number" id="merRating" value="4.5" min="0" max="5" step="0.1"></div>
+      </div>
+      <div class="form-group"><label>地址</label><input id="merAddr" placeholder="详细地址"></div>
+      <div class="form-group"><label>联系电话</label><input id="merPhone" placeholder="0576-8888****"></div>
+      <div class="form-group"><label>营业时间</label><input id="merTime" placeholder="08:00-21:00"></div>
+      <div class="form-group"><label>拼客优惠</label><input id="merDiscount" placeholder="例：拼客专享9折"></div>
+      <div class="form-group"><label>商家描述</label><textarea id="merDesc" placeholder="商家介绍..."></textarea></div>
+      <div class="form-group"><label>标签（逗号分隔）</label><input id="merTags" placeholder="老字号,非遗美食,堂食"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeMdl('merModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveMerchant()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="storyModal" onclick="if(event.target===this)closeMdl('storyModal')">
+  <div class="modal-box">
+    <div class="modal-hd"><h3 id="storyModalTitle">新增案例</h3><div class="close-btn" onclick="closeMdl('storyModal')">✕</div></div>
+    <div class="modal-bd">
+      <input type="hidden" id="storyEditId">
+      <div class="form-group"><label>案例标题 *</label><input id="storyTitle" placeholder="例：50人三门青蟹节圆满收官"></div>
+      <div class="form-row">
+        <div class="form-group"><label>日期</label><input type="date" id="storyDate"></div>
+        <div class="form-group"><label>参与人数</label><input type="number" id="storyPeople" value="20" min="1"></div>
+      </div>
+      <div class="form-group"><label>分类</label><select id="storyCat"><option value="meishi">美食</option><option value="lvyou">旅游</option><option value="yule">娱乐</option><option value="jianshen">运动</option><option value="qinzi">亲子</option><option value="xuexi">学习</option><option value="gouwu">购物</option></select></div>
+      <div class="form-group"><label>案例摘要 *</label><textarea id="storySummary" placeholder="简要描述活动情况..."></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeMdl('storyModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveStory()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeMdl('confirmModal')">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-hd"><h3>确认操作</h3><div class="close-btn" onclick="closeMdl('confirmModal')">✕</div></div>
+    <div class="modal-bd"><p id="confirmMsg" style="font-size:.9rem;line-height:1.6"></p></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeMdl('confirmModal')">取消</button>
+      <button class="btn btn-danger" id="confirmBtn" onclick="">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// === 配置（与前台相同） ===
+const SB_URL = 'https://nnzsreyhqkhrjmqhvbmm.supabase.co';
+const SB_KEY = 'sb_publishable_dWUMEdKE3JQFbLvnoGeWCw_iseue-gc';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+const CAT_MAP = {meishi:'美食聚餐',lvyou:'旅游出行',yule:'休闲娱乐',gouwu:'购物拼团',jianshen:'运动健身',xuexi:'学习培训',qinzi:'亲子活动',jujia:'家居生活'};
+const STATUS_MAP = {hot:['🔥 热门','badge-hot'],new:['✨ 最新','badge-new'],full:['已满','badge-full'],normal:['进行中','badge-normal']};
+
+let activities = [], merchants = [], stories = [], users = [];
+
+// === Auth ===
+async function adminLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd = document.getElementById('loginPwd').value;
+  if (!email || !pwd) return toast('请输入邮箱和密码');
+  toast('登录中...');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) return toast(error.message, 'error');
+  enterAdmin(data.user);
+}
+async function enterAdmin(user) {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('adminLayout').style.display = 'flex';
+  document.getElementById('adminName').textContent = user.email;
+  await loadAllData();
+  renderDashboard();
+}
+async function adminLogout() {
+  await sb.auth.signOut();
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('adminLayout').style.display = 'none';
+}
+
+// === Data Loading ===
+async function loadAllData() {
+  const [a, m, s, u] = await Promise.all([
+    sb.from('pinke_activities').select('*').order('created_at', { ascending: false }),
+    sb.from('merchants').select('*').order('id'),
+    sb.from('success_stories').select('*').order('date', { ascending: false }),
+    sb.from('profiles').select('*').order('created_at', { ascending: false })
+  ]);
+  activities = a.data || [];
+  merchants = m.data || [];
+  stories = s.data || [];
+  users = u.data || [];
+}
+
+// === Navigation ===
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  const titles = { dashboard:'数据面板', activities:'拼客活动', merchants:'商家管理', stories:'成功案例', users:'用户列表' };
+  document.getElementById('pageTitle').textContent = titles[page] || '';
+  document.getElementById('sidebar').classList.remove('open');
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'activities') renderActivities();
+  if (page === 'merchants') renderMerchants();
+  if (page === 'stories') renderStories();
+  if (page === 'users') renderUsers();
+}
+
+// === Dashboard ===
+function renderDashboard() {
+  const totalAct = activities.length;
+  const hotAct = activities.filter(a => a.status === 'hot').length;
+  const totalMer = merchants.length;
+  const totalUsers = users.length;
+  const totalJoins = activities.reduce((s, a) => s + (a.current_people || 0), 0);
+  const fullAct = activities.filter(a => a.status === 'full').length;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="label">总活动数</div><div class="value" style="color:var(--primary)">${totalAct}</div><div class="change up">🔥 ${hotAct} 个热门</div></div>
+    <div class="stat-card"><div class="label">合作商家</div><div class="value" style="color:var(--secondary)">${totalMer}</div></div>
+    <div class="stat-card"><div class="label">注册用户</div><div class="value" style="color:var(--accent)">${totalUsers}</div></div>
+    <div class="stat-card"><div class="label">累计参与人次</div><div class="value" style="color:var(--warning)">${totalJoins}</div><div class="change up">✅ ${fullAct} 个已成团</div></div>
+  `;
+
+  // 分类占比
+  const catCounts = {};
+  activities.forEach(a => { catCounts[a.category] = (catCounts[a.category] || 0) + 1; });
+  let catHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  for (const [cat, count] of Object.entries(catCounts)) {
+    const pct = totalAct ? Math.round(count / totalAct * 100) : 0;
+    catHtml += `<div style="flex:1;min-width:120px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);text-align:center"><div style="font-size:.78rem;color:var(--text-s)">${CAT_MAP[cat]||cat}</div><div style="font-size:1.3rem;font-weight:800">${count}</div><div style="font-size:.72rem;color:var(--text-l)">${pct}%</div></div>`;
+  }
+  catHtml += '</div>';
+  document.getElementById('chartCat').outerHTML = catHtml;
+
+  // 最近活动表
+  const recent = activities.slice(0, 8);
+  const tbody = document.querySelector('#recentTable tbody');
+  tbody.innerHTML = recent.map(a => {
+    const [sLabel, sCls] = STATUS_MAP[a.status] || ['进行中','badge-normal'];
+    return `<tr><td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.title}</td><td>${CAT_MAP[a.category]||a.category}</td><td><span class="badge ${sCls}">${sLabel}</span></td><td>${a.current_people||0}/${a.min_people||5}</td><td style="font-size:.78rem;color:var(--text-l)">${(a.created_at||'').slice(0,10)}</td></tr>`;
+  }).join('');
+}
+
+// === Activities CRUD ===
+function renderActivities() {
+  const q = (document.getElementById('actSearch')?.value || '').toLowerCase();
+  let list = activities.filter(a => !q || a.title.toLowerCase().includes(q));
+  const tbody = document.querySelector('#actTable tbody');
+  tbody.innerHTML = list.map(a => {
+    const [sLabel, sCls] = STATUS_MAP[a.status] || ['进行中','badge-normal'];
+    return `<tr>
+      <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.title}</td>
+      <td>${CAT_MAP[a.category]||a.category}</td>
+      <td>${a.price > 0 ? '¥'+a.price : '免费'}</td>
+      <td>${a.current_people||0}/${a.min_people||5}</td>
+      <td><span class="badge ${sCls}">${sLabel}</span></td>
+      <td style="font-size:.78rem">${a.deadline||'-'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editActivity(${a.id})">编辑</button>
+        <button class="btn btn-sm" style="color:var(--danger)" onclick="confirmDel('act',${a.id},'${a.title}')">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('actEmpty').style.display = list.length ? 'none' : 'block';
+  // 填充分类筛选
+  const sel = document.getElementById('actFilter');
+  if (sel.options.length <= 1) {
+    Object.entries(CAT_MAP).forEach(([k,v]) => { const o = document.createElement('option'); o.value = k; o.textContent = v; sel.appendChild(o); });
+  }
+}
+function openActModal(act) {
+  document.getElementById('actEditId').value = act ? act.id : '';
+  document.getElementById('actModalTitle').textContent = act ? '编辑活动' : '新增活动';
+  document.getElementById('actTitle').value = act?.title || '';
+  document.getElementById('actCat').value = act?.category || 'meishi';
+  document.getElementById('actStatus').value = act?.status || 'new';
+  document.getElementById('actPrice').value = act?.price || 0;
+  document.getElementById('actOrigPrice').value = act?.original_price || 0;
+  document.getElementById('actMin').value = act?.min_people || 5;
+  document.getElementById('actCur').value = act?.current_people || 1;
+  document.getElementById('actDeadline').value = act?.deadline || '';
+  document.getElementById('actOrganizer').value = act?.organizer || '';
+  document.getElementById('actLocation').value = act?.location || '';
+  document.getElementById('actPhone').value = act?.phone || '';
+  document.getElementById('actDesc').value = act?.description || '';
+  openMdl('actModal');
+}
+function editActivity(id) { openActModal(activities.find(a => a.id === id)); }
+async function saveActivity() {
+  const id = document.getElementById('actEditId').value;
+  const data = {
+    title: document.getElementById('actTitle').value.trim(),
+    category: document.getElementById('actCat').value,
+    status: document.getElementById('actStatus').value,
+    price: parseInt(document.getElementById('actPrice').value) || 0,
+    original_price: parseInt(document.getElementById('actOrigPrice').value) || 0,
+    min_people: parseInt(document.getElementById('actMin').value) || 5,
+    current_people: parseInt(document.getElementById('actCur').value) || 1,
+    deadline: document.getElementById('actDeadline').value || null,
+    organizer: document.getElementById('actOrganizer').value.trim(),
+    location: document.getElementById('actLocation').value.trim(),
+    phone: document.getElementById('actPhone').value.trim(),
+    description: document.getElementById('actDesc').value.trim()
+  };
+  if (!data.title || !data.location || !data.description) return toast('请填写必填项', 'error');
+  toast('保存中...');
+  if (id) {
+    const { error } = await sb.from('pinke_activities').update(data).eq('id', parseInt(id));
+    if (error) return toast(error.message, 'error');
+    toast('活动已更新', 'success');
+  } else {
+    const { data: { user } } = await sb.auth.getUser();
+    data.created_by = user?.id || null;
+    const { error } = await sb.from('pinke_activities').insert(data);
+    if (error) return toast(error.message, 'error');
+    toast('活动已创建', 'success');
+  }
+  closeMdl('actModal');
+  await loadAllData();
+  renderActivities();
+}
+
+// === Merchants CRUD ===
+function renderMerchants() {
+  const q = (document.getElementById('merSearch')?.value || '').toLowerCase();
+  const list = merchants.filter(m => !q || m.name.toLowerCase().includes(q));
+  const tbody = document.querySelector('#merTable tbody');
+  tbody.innerHTML = list.map(m => `<tr>
+    <td style="font-weight:600">${m.name}</td>
+    <td>${CAT_MAP[m.category]||m.category}</td>
+    <td>⭐ ${m.rating}</td>
+    <td>${m.reviews||0}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.discount||'-'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="editMerchant(${m.id})">编辑</button>
+      <button class="btn btn-sm" style="color:var(--danger)" onclick="confirmDel('mer',${m.id},'${m.name}')">删除</button>
+    </td>
+  </tr>`).join('');
+}
+function openMerModal(m) {
+  document.getElementById('merEditId').value = m ? m.id : '';
+  document.getElementById('merModalTitle').textContent = m ? '编辑商家' : '新增商家';
+  document.getElementById('merName').value = m?.name || '';
+  document.getElementById('merCat').value = m?.category || 'meishi';
+  document.getElementById('merRating').value = m?.rating || 4.5;
+  document.getElementById('merAddr').value = m?.address || '';
+  document.getElementById('merPhone').value = m?.phone || '';
+  document.getElementById('merTime').value = m?.open_time || '';
+  document.getElementById('merDiscount').value = m?.discount || '';
+  document.getElementById('merDesc').value = m?.description || '';
+  document.getElementById('merTags').value = (m?.tags || []).join(',');
+  openMdl('merModal');
+}
+function editMerchant(id) { openMerModal(merchants.find(m => m.id === id)); }
+async function saveMerchant() {
+  const id = document.getElementById('merEditId').value;
+  const data = {
+    name: document.getElementById('merName').value.trim(),
+    category: document.getElementById('merCat').value,
+    rating: parseFloat(document.getElementById('merRating').value) || 4.5,
+    reviews: 0,
+    address: document.getElementById('merAddr').value.trim(),
+    phone: document.getElementById('merPhone').value.trim(),
+    open_time: document.getElementById('merTime').value.trim(),
+    discount: document.getElementById('merDiscount').value.trim(),
+    description: document.getElementById('merDesc').value.trim(),
+    tags: document.getElementById('merTags').value.split(',').map(t => t.trim()).filter(Boolean)
+  };
+  if (!data.name) return toast('请填写商家名称', 'error');
+  toast('保存中...');
+  if (id) {
+    data.reviews = merchants.find(m => m.id === parseInt(id))?.reviews || 0;
+    const { error } = await sb.from('merchants').update(data).eq('id', parseInt(id));
+    if (error) return toast(error.message, 'error');
+    toast('商家已更新', 'success');
+  } else {
+    const { error } = await sb.from('merchants').insert(data);
+    if (error) return toast(error.message, 'error');
+    toast('商家已创建', 'success');
+  }
+  closeMdl('merModal');
+  await loadAllData();
+  renderMerchants();
+}
+
+// === Stories CRUD ===
+function renderStories() {
+  const tbody = document.querySelector('#storyTable tbody');
+  tbody.innerHTML = stories.map(s => `<tr>
+    <td style="font-weight:600">${s.title}</td>
+    <td style="font-size:.78rem">${s.date||'-'}</td>
+    <td>${s.people||0}人</td>
+    <td>${CAT_MAP[s.category]||s.category}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-ghost btn-sm" onclick="editStory(${s.id})">编辑</button>
+      <button class="btn btn-sm" style="color:var(--danger)" onclick="confirmDel('story',${s.id},'${s.title}')">删除</button>
+    </td>
+  </tr>`).join('');
+}
+function openStoryModal(s) {
+  document.getElementById('storyEditId').value = s ? s.id : '';
+  document.getElementById('storyModalTitle').textContent = s ? '编辑案例' : '新增案例';
+  document.getElementById('storyTitle').value = s?.title || '';
+  document.getElementById('storyDate').value = s?.date || '';
+  document.getElementById('storyPeople').value = s?.people || 20;
+  document.getElementById('storyCat').value = s?.category || 'meishi';
+  document.getElementById('storySummary').value = s?.summary || '';
+  openMdl('storyModal');
+}
+function editStory(id) { openStoryModal(stories.find(s => s.id === id)); }
+async function saveStory() {
+  const id = document.getElementById('storyEditId').value;
+  const data = {
+    title: document.getElementById('storyTitle').value.trim(),
+    date: document.getElementById('storyDate').value || null,
+    people: parseInt(document.getElementById('storyPeople').value) || 0,
+    category: document.getElementById('storyCat').value,
+    summary: document.getElementById('storySummary').value.trim()
+  };
+  if (!data.title || !data.summary) return toast('请填写必填项', 'error');
+  toast('保存中...');
+  if (id) {
+    const { error } = await sb.from('success_stories').update(data).eq('id', parseInt(id));
+    if (error) return toast(error.message, 'error');
+    toast('案例已更新', 'success');
+  } else {
+    const { error } = await sb.from('success_stories').insert(data);
+    if (error) return toast(error.message, 'error');
+    toast('案例已创建', 'success');
+  }
+  closeMdl('storyModal');
+  await loadAllData();
+  renderStories();
+}
+
+// === Users ===
+async function renderUsers() {
+  // 获取每个用户的活动和参与数
+  const tbody = document.querySelector('#userTable tbody');
+  const q = (document.getElementById('userSearch')?.value || '').toLowerCase();
+  const filtered = users.filter(u => !q || (u.nickname||'').toLowerCase().includes(q) || (u.phone||'').includes(q));
+
+  // 批量查询统计
+  const actCounts = {}, joinCounts = {};
+  try {
+    const [actRes, joinRes] = await Promise.all([
+      sb.from('pinke_activities').select('created_by'),
+      sb.from('user_joins').select('user_id')
+    ]);
+    (actRes.data||[]).forEach(a => { actCounts[a.created_by] = (actCounts[a.created_by]||0) + 1; });
+    (joinRes.data||[]).forEach(j => { joinCounts[j.user_id] = (joinCounts[j.user_id]||0) + 1; });
+  } catch(e) {}
+
+  tbody.innerHTML = filtered.map(u => `<tr>
+    <td style="font-weight:600">${u.nickname||'未命名'}</td>
+    <td style="font-size:.82rem;color:var(--text-s)">${u.phone||'-'}</td>
+    <td style="font-size:.78rem">${(u.created_at||'').slice(0,10)}</td>
+    <td>${actCounts[u.id]||0}</td>
+    <td>${joinCounts[u.id]||0}</td>
+  </tr>`).join('');
+}
+
+// === Delete Confirm ===
+function confirmDel(type, id, name) {
+  document.getElementById('confirmMsg').textContent = `确定要删除"${name}"吗？此操作不可恢复。`;
+  document.getElementById('confirmBtn').onclick = async () => {
+    closeMdl('confirmModal');
+    toast('删除中...');
+    const tables = { act: 'pinke_activities', mer: 'merchants', story: 'success_stories' };
+    const { error } = await sb.from(tables[type]).delete().eq('id', id);
+    if (error) return toast(error.message, 'error');
+    toast('已删除', 'success');
+    await loadAllData();
+    if (type === 'act') renderActivities();
+    if (type === 'mer') renderMerchants();
+    if (type === 'story') renderStories();
+  };
+  openMdl('confirmModal');
+}
+
+// === Helpers ===
+function openMdl(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeMdl(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// === Auto-login check ===
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) enterAdmin(session.user);
+})();
+</script>
+</body>
+</html>
